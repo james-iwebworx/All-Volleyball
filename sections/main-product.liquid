@@ -396,9 +396,7 @@
                            endif
                         -%}
                         {%- if showQty -%}
-                          <div class="quantity-input-container">
-                            {% render 'quantity-input', layout_style: 'combined' %}
-                          </div>
+                          
                         {%- else -%}
                           <input type="hidden" name="quantity" value="1">
                         {%- endif -%}
