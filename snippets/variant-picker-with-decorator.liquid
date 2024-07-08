@@ -1,0 +1,388 @@
+{%- comment -%}
+  Parameters:
+  - product {Object} - Product object.
+  - product_form_id {String} - Product form ID.
+  - media_ratio {Number} - Media aspect ratio.
+  - swatch_crop {Object} - Alignment of image in variant image swatches.
+  - block {Object} - Block object.
+
+  Dependencies:
+  - Custom select component
+
+  Usage:
+  {% render 'variant-picker', product: product, product_form_id: product_form_id, block: block %}
+{%- endcomment -%}
+
+<style>
+  .decorator-option-selector.sizes-option .size-table{
+    display: flex;
+    gap: 10px 0;
+    flex-wrap: wrap;
+  }
+  .decorator-option-selector.sizes-option .size-table.size-table-wrap{
+    flex-wrap: wrap;
+  }
+  variant-picker .option-selector__btns{
+    gap: 10px;
+  }
+  variant-picker .product-configuration .option-selector__btns label{
+    flex-grow: 1;
+    margin: 12px 0;
+  }
+  .decorator-option-selector{
+    margin-bottom: 12px !important;
+    .option-selector__btns{
+      gap: 15px;
+    }
+    .option-selector__btns label{
+      flex-grow: 1;
+    }
+    .size-container{
+      border: var(--btn-border-width) solid rgba(var(--input-text-color)/.2);
+      position: relative;
+      flex: 0 1 50%;
+      text-align: center;
+    }
+    @media only screen and (min-width: 500px){
+      .size-container {
+        flex: 0 1 33%;
+      }
+    }
+    @media only screen and (min-width: 700px){
+      .size-container {
+        flex: 0 1 25%;
+      }
+    }
+    @media only screen and (min-width: 768px){
+      .size-container {
+        flex: 0 1 33%;
+      }
+    }
+    @media only screen and (min-width: 1200px){
+      .size-container {
+        flex: 0 1 25%;
+      }
+    }
+    @media only screen and (min-width: 1600px){
+      .size-container {
+        flex: 1 1 110px;
+        max-width: 120px;
+      }
+    }
+    .size-container.out-of-stock:before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #ccc;
+      opacity: 0.3;
+      cursor: not-allowed;
+      z-index: 9;
+    }
+    .size-container .title{
+      text-align: center;
+      border-bottom: var(--btn-border-width) solid rgba(var(--input-text-color)/.2);
+    }
+    .qty-input__input{
+      width: 1.9em;
+    }
+    .qty-input--combined{
+      border: 0;
+      border-radius: 0;
+    }
+    .qty-input--combined .qty-input__btn{
+      width: calc(var(--padding) * 2 + 1rem);
+      height: calc(var(--padding) * 2 + 1rem);
+    }
+    .qty-message-alert{
+      font-size: 13px;
+      margin: 10px 0;
+      text-align: center;
+      background: rgba(var(--input-text-color)/.2);
+      padding: 10px;
+      border: 2px solid;
+    }
+    .qty-message-alert p{
+      margin: 0;
+    }
+    .qty-message-alert.hide{
+      display: none;
+    }
+  }
+  variant-picker .buttons-wrapper .hide{
+    display: none;
+  }
+  variant-picker .option-selector__btns label.dropshipping:before{
+    content: "Special Order";
+    position: absolute;
+    font-size: 10px;
+    font-weight: 200;
+    bottom: -18px;
+  }
+  .decorator-container{
+    position: fixed;
+    top: 60%;
+    left: 50%;
+    background: #fff;
+    border: 2px solid;
+    width: 80vw;
+    transform: translate(-50%, -50%);
+    z-index: 99;
+    display: none;
+    max-width: 90vw;
+    height: 70vH;
+  }
+  @media only screen and (min-width: 768px){
+    .decorator-container {
+      top: 50%;
+      height: 575px;
+      max-width: 1024px;
+    }
+  }
+  .decorator-container .close{
+    position: absolute;
+    top: 5px;
+    right: 15px;
+    cursor: pointer;
+  }
+  .decorator-container.show {
+    display: block;
+  }
+  .decorator-container iframe{
+    width: 100%;
+    height: 100%;
+  }
+</style>
+
+<script src="{{ 'variant-picker-decorator.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign update_url = false
+  if request.page_type == 'product'
+    assign update_url = true
+  endif
+-%}
+
+<variant-picker class="no-js-hidden" data-url="{{ product.url }}" data-update-url="{{ update_url }}" data-show-availability="true">
+  {% assign stepNumber = 0 %}
+  {%- for option in product.options_with_values -%}
+    {% assign stepNumber = stepNumber | plus: 1 %}
+    {%- capture option_id %}{{ section.id }}-{{ option.name | handle }}{% endcapture -%}
+    {%- liquid
+      assign is_color_selector = false
+      assign is_swatch_style = false
+      assign is_variant_image_style = false
+
+      if settings.swatch_option_name contains option.name
+        assign is_color_selector = true
+        if settings.variant_picker_color_style == 'swatches'
+          assign is_swatch_style = true
+        elsif settings.variant_picker_color_style == 'variant-images'
+          assign is_variant_image_style = true
+          assign option_index0 = forloop.index0
+        endif
+      endif
+    -%}
+
+      {% liquid
+        assign escapedOptionName = option.name | escape | downcase
+        assign sizeOption = false
+        if escapedOptionName == 'size'
+          assign sizeOption = true
+        endif
+      %}
+
+      {% if sizeOption %}
+          <fieldset class="decorator-option-selector sizes-option">
+            {% liquid
+              assign optionName = 'Quantity'
+              if option.values.size > 1
+                assign optionName = option.name
+              endif
+            %}
+            <legend class="label">Step {{ stepNumber }}: Choose {{ optionName }}</legend>
+            <div class="size-table {% if option.values.size > 6 %}size-table-wrap{% endif %}">
+              {%- for value in option.values -%}
+                <div class="size-container" data-size="{{ value }}">
+                  <div class="title">
+                    {{ value }}
+                  </div>
+                    {% render 'quantity-input',
+                       is_cart: true,
+                       item: item,
+                       layout_style: 'combined',
+                       placeholder: 0,
+                       optionValue: value
+                    %}
+                </div>
+              {%- endfor -%}
+            </div>
+            <div class="qty-message-alert hide">
+              {{ block.settings.max_qty_alert }}
+            </div>
+          </fieldset>
+      {% else %}
+          <fieldset class="option-selector" data-selector-type="listed">
+            {% liquid
+              assign optionName = option.name | downcase
+              if optionName == 'colour'
+                assign optionName = 'Color'
+              else
+                assign optionName = option.name
+              endif
+            %}
+            <legend class="label">Step {{ stepNumber }}: Choose {{ optionName }} - <span class="selected-value"></span></legend>
+            <div class="option-selector__btns flex flex-wrap{% if is_variant_image_style %} items-start{% endif %}">
+              {%- for value in option.values -%}
+                {%- assign value_index0 = forloop.index0 -%}
+                <input type="radio" class="opt-btn visually-hidden focus-label js-option" name="{{ option_id }}-option" id="{{ option_id }}-opt-{{ value_index0 }}" value="{{ value | escape }}"{% if option.selected_value == value %} checked{% endif %}>
+                {%- if is_variant_image_style -%}
+                  {%- for variant in product.variants -%}
+                    {%- if variant.options[option_index0] == value -%}
+                      <label class="opt-label opt-label--swatch opt-label--image relative swatch-shape--{{ settings.variant_picker_swatch_shape }}{% if settings.variant_picker_swatch_shape != "circle" %} swatch-shape--not-circle{% endif %}{% if settings.variant_picker_color_style == 'variant-images' and variant.featured_media %} swatch--variant-image{% endif %}"{% if variant.featured_media == blank %} data-swatch="{{ value | replace: '"', '' | downcase }}"{% endif %} for="{{ option_id }}-opt-{{ value_index0 }}">
+                        <span class="visually-hidden js-value">{{- value | escape -}}</span>
+                        <div class="opt-label__media media h-full w-full{% if settings.variant_picker_color_style == 'variant-images' and variant.featured_media == blank %} absolute top-0 left-0{% else %} relative{% endif %}">
+                          {%- liquid
+                            if settings.variant_picker_swatch_shape == "natural"
+                              assign class = 'bg-theme-bg'
+                            elsif swatch_crop == 'top'
+                              assign class = 'img-fit object-top bg-theme-bg'
+                            else
+                              assign class = 'img-fit bg-theme-bg'
+                            endif
+
+                            assign swatch_size = settings.variant_picker_swatch_size | times: 1.5
+                          -%}
+                          {% render 'image', image: variant.featured_media, src_width: swatch_size, lazy_load: false, class: class, disable_focal_point: true %}
+                        </div>
+                      </label>
+                      {%- break -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                {%- else -%}
+                  <label class="opt-label {% if is_color_selector and is_swatch_style %}opt-label--swatch swatch-shape--{{ settings.variant_picker_swatch_shape }}{% if settings.variant_picker_swatch_shape != "circle" %} swatch-shape--not-circle{% endif %}{% else %}opt-label--btn{% endif %} btn relative text-center"{% if is_color_selector and is_swatch_style %} data-swatch="{{ value | replace: '"', '' | downcase }}"{% endif %} for="{{ option_id }}-opt-{{ value_index0 }}">
+                    <span{% if is_color_selector and is_swatch_style %} class="visually-hidden js-value"{% endif %}>{{- value | escape -}}</span>
+                  </label>
+                {%- endif -%}
+              {%- endfor -%}
+            </div>
+          </fieldset>
+
+          {% if stepNumber == 1 %}
+            {% assign stepNumber = stepNumber | plus: 1 %}
+            <fieldset class="decorator-option-selector product-configuration" data-selector-type="listed">
+              <legend class="label">Step {{ stepNumber }}: Choose An Option</legend>
+              <div class="option-selector__btns flex flex-wrap">
+                {% assign value = 'Buy it Blank' %}
+                <input type="radio" class="opt-btn visually-hidden focus-label" name="decorator-option" id="blank-opt" value="{{ value | downcase }}" checked>
+                <label class="opt-label {% if is_color_selector and is_swatch_style %}opt-label--swatch swatch-shape--{{ settings.variant_picker_swatch_shape }}{% if settings.variant_picker_swatch_shape != "circle" %} swatch-shape--not-circle{% endif %}{% else %}opt-label--btn{% endif %} btn relative text-center"{% if is_color_selector and is_swatch_style %} data-swatch="{{ value | replace: '"', '' | downcase }}"{% endif %} for="blank-opt">
+                  <span{% if is_color_selector and is_swatch_style %} class="visually-hidden js-value"{% endif %}>{{- value | escape -}}</span>
+                </label>
+                {% assign value = 'Customized' %}
+                <input type="radio" class="opt-btn visually-hidden focus-label" name="decorator-option" id="customized-opt" value="{{ value | downcase }}">
+                <label class="opt-label {% if is_color_selector and is_swatch_style %}opt-label--swatch swatch-shape--{{ settings.variant_picker_swatch_shape }}{% if settings.variant_picker_swatch_shape != "circle" %} swatch-shape--not-circle{% endif %}{% else %}opt-label--btn{% endif %} btn relative text-center"{% if is_color_selector and is_swatch_style %} data-swatch="{{ value | replace: '"', '' | downcase }}"{% endif %} for="customized-opt">
+                  <span{% if is_color_selector and is_swatch_style %} class="visually-hidden js-value"{% endif %}>Add Decoration</span>
+                </label>
+              </div>
+            </fieldset>
+          {% endif %}
+      {% endif %}
+
+  {%- endfor -%}
+
+  <script type="application/json">
+    {
+      "product": {{- product | json -}},
+      "formatted": {
+        {%- for variant in product.variants -%}
+          {%- liquid
+            capture price
+              render 'price-as-money', price: variant.price
+            endcapture
+
+            capture compare_at_price
+              render 'price-as-money', price: variant.compare_at_price, show_money_with_currency: false
+            endcapture
+
+            capture unit_price
+              render 'price-as-money', price: variant.unit_price, show_money_with_currency: false
+            endcapture
+          -%}
+          "{{ variant.id }}":{
+            "option1":{{ variant.option1 | json }}
+            ,"option2":{{ variant.option2 | json }}
+            ,"option3":{{ variant.option3 | json }}
+            ,"price":{{ price | json }}
+            {%- if variant.compare_at_price and variant.compare_at_price > variant.price -%}
+              ,"compareAtPrice":{{ compare_at_price | json -}}
+            {%- endif -%}
+            {%- if variant.unit_price_measurement -%}
+              ,"unitPrice":{{ unit_price | json -}}
+            {%- endif -%}
+            {%- if variant.inventory_management != nil and variant.inventory_quantity <= 0 -%}
+              ,"inventory":"none"
+            {%- endif -%}
+            {%- if variant.weight -%}
+              ,"weight":{{ variant.weight | weight_with_unit: variant.weight_unit | json }}
+            {%- endif -%}
+              ,"inventory_policy":{{ variant.inventory_policy | json }}
+              ,"inventory_q":{{ variant.inventory_quantity | json }}
+              ,"warehouse_stocked": "{{ variant.metafields.trellis.warehouse_stocked }}"
+              ,"warehouse_stocked_shipping_message": "{{ variant.metafields.trellis.warehouse_stocked_shipping_message }}"
+              ,"dropship_shipping_message": "{{ variant.metafields.trellis.dropship_shipping_message }}"
+              ,"min_fee_message": "{{ variant.metafields.trellis.min_fee_message }}"
+          }{%- unless forloop.last %},{% endunless -%}
+        {%- endfor -%}
+      }
+    }
+  </script>
+
+  <div class="min-fee-message-container" data-default-min-fee-message="{{ default_min_fee_message }}"></div>
+
+  <div class="buttons-wrapper">
+    <button class="decorate-button btn btn--primary w-full hide" id="decorate">
+      Decorate
+    </button>
+    <button class="btn btn--primary w-full btn-add-to-cart ">
+      {{- 'products.product.add_to_cart' | t -}}
+    </button>
+  </div>
+</variant-picker>
+
+<div class="shipping-message-container"
+     data-default-dropshipping-message="{{ default_dropshipping_message }}"
+     data-default-warehouse-message="{{ default_warehouse_message }}"
+     data-decorated-shipping-message="{{ decorated_shipping_message }}"
+></div>
+
+<noscript>
+  <div class="product-info__select"{% if product.has_only_default_variant %} hidden{% endif %}>
+    <label class="label" for="variants-{{ section.id }}">
+      {{- 'products.product.product_variants' | t -}}
+    </label>
+    <div class="select relative">
+      <select class="select w-full" id="variants-{{ section.id }}" name="id" form="{{ product_form_id }}">
+        {%- for variant in product.variants -%}
+          <option value="{{ variant.id }}"
+                  {% if variant == current_variant %}selected{% endif %}
+                  {% if variant.available == false %}disabled{% endif %}
+                  data-inventory_policy="{{ variant.inventory_policy }}"
+                  data-inventory_q="{{ variant.inventory_quantity }}"
+                  data-variant_price="{{ variant.price }}"
+          >
+            {{- variant.title -}}
+            {%- if variant.available == false %} - {{ 'products.product.sold_out' | t }}{% endif %}
+            - {{ variant.price | money | strip_html }}
+          </option>
+        {%- endfor -%}
+      </select>
+    </div>
+  </div>
+</noscript>
+
+<div class="decorator-container">
+  <div class="close">X</div>
+  <iframe src="" frameborder="0" data-base-url="{{ block.settings.decorator_url }}"></iframe>
+</div>

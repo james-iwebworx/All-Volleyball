@@ -1,0 +1,38 @@
+
+<div class="cf-cart-price-block" style="display: grid; grid-template-columns: auto auto; gap: 0 0.5em; white-space: nowrap;">
+  
+  {%- if turnaround_price == 0 and original_price == final_price -%}
+    {% if qtyTotal != 1 %}<div class="dt">{{ qtyTotal }} &times; {{ item.variant.price | money }}/ea</div>{% endif %}
+    <strong class="price__current" style="text-align: right;">
+      {%- render 'price-as-money', price: final_price, show_money_with_currency: false -%}
+    </strong>
+    {% if qtyTotal != 1 %}<div class="mb">{{ qtyTotal }} &times; {{ item.variant.price | money }}/ea</div>{% endif %}
+  {%- else -%}
+    {%- assign group_price = final_price | plus: turnaround_price -%}
+    <div class="dt">{{ qtyTotal }} &times; {{ item.variant.price | money }}/ea</div>
+    <div style="text-align: right;">{{ original_price | money }}</div>
+    <div class="mb">{{ qtyTotal }} &times; {{ item.variant.price | money }}/ea</div>
+
+    {%- if original_price != final_price -%}
+      {%- assign discount_amount = original_price | minus: final_price -%}
+      {%- assign percent_off = discount_amount | times: 100.0 | divided_by: original_price | round -%}
+      <div class="dt">Volume discount</div>
+      <div style="text-align: right;">- {{ discount_amount | money }}</div>
+      <div class="mb">Volume discount</div>
+    {%- endif -%}
+    
+    {%- assign original_group_price = original_price %}
+    
+    {%- if turnaround_price != 0 -%}
+      {%- assign original_group_price = original_group_price | plus: turnaround_price -%}
+      <div class="dt">{{ turnaround.title }} ({{ qtyTotal }} &times; {{ turnaround.price | money }})</div>
+      <div style="text-align: right;">+ {{ turnaround_price | money }}</div>
+      <div class="mb">{{ turnaround.title }} ({{ qtyTotal }} &times; {{ turnaround.price | money }})</div>
+    {%- endif -%}
+
+    <div class="dt">{% comment %}{% if qtyTotal > 1 %}{{ group_price | times: 1.0 | divided_by: qtyTotal | ceil | money }}/ea ={% endif %}{% endcomment %}</div>
+    <div style="text-align: right; border-top: 1px solid currentcolor;"><strong>{{ group_price | money }}</strong></div>
+    <div class="mb">{% comment %}{% if qtyTotal > 1 %}{{ group_price | times: 1.0 | divided_by: qtyTotal | ceil | money }}/ea ={% endif %}{% endcomment %}</div>
+  
+  {%- endif -%}
+</div>

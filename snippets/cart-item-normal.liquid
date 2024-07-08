@@ -1,0 +1,283 @@
+{%- comment -%}
+  Parameters:
+  - item {line_item} - Line item object from the cart
+{%- endcomment -%}
+
+{%- liquid
+  if item.variant.compare_at_price > item.variant.price
+    assign variant_price_reduced = true
+  else
+    assign variant_price_reduced = false
+  endif
+-%}
+<tr
+  class="cart-item grid gap-x-6"
+  id="cart-item-{{ item.index | plus: 1 }}"
+  data-product-id="{{ item.product_id }}"
+  data-variant-id="{{ item.variant_id }}"
+>
+  <td class="cart-item__image">
+    <a href="{{ item.url }}" class="block {% if settings.blend_product_images %} image-blend{% endif %}">
+      {%- if item.image -%}
+        {%- capture sizes -%}
+          {%- render 'sizes-attribute', min: '64px', sm: '128px', md: false, lg: false, xl: false, max: false -%}
+        {%- endcapture -%}
+        {{ item.image | image_url: width: 180 | image_tag: widths: '64, 128, 180', sizes: sizes, loading: 'lazy' }}
+      {%- else -%}
+        <div class="media relative" style="padding-top: 100%;">
+          {{ 'image' | placeholder_svg_tag: 'media__placeholder img-fit' }}
+        </div>
+      {%- endif -%}
+    </a>
+  </td>
+  <td class="cart-item__details">
+    {%- if section.settings.show_vendor and item.vendor != blank -%}
+      <div class="text-theme-light text-sm mb-2">
+        {{ item.vendor }}
+      </div>
+    {%- endif -%}
+
+    {% assign productType = item.product.type | downcase %}
+    {% if productType == 'fee' or productType == 'misc' or productType == 'exchange and return credit' %}
+      <span class="cart-item__title m-0 font-bold text-current js-item-name">
+        {{- item.product.title | escape -}}
+      </span>
+    {% else %}
+      <a class="cart-item__title m-0 font-bold text-current js-item-name" href="{{ item.url }}">
+        {{- item.product.title | escape -}}
+      </a>
+    {% endif %}
+    {% comment %}Added/Modified by Limoni Apps on 05/03/24 to support Discount Ninja{% endcomment %}
+    <div
+      class="limoniapps-discountninja-cart-item-product-comment"
+      data-limoniapps-discountninja-cart-key="{{item.key}}"
+    ></div>
+    {%- if settings.cart_show_weight and item.variant.weight > 0 -%}
+      <div class="cart-item__weight text-sm mt-2">
+        {{ item.variant.weight | weight_with_unit: item.variant.weight_unit }}
+      </div>
+    {%- endif -%}
+
+    <div class="cart-item__info">
+      {% comment %}Added/Modified by Limoni Apps on 05/03/24 to support Discount Ninja{% endcomment %}
+
+      <span
+        class="limoniapps-discountninja-cart-item-product-price"
+        data-limoniapps-discountninja-cart-key="{{item.key}}"
+      >
+        {%- if variant_price_reduced or item.original_line_price != item.final_line_price -%}
+          <dl class="m-0">
+            <dt class="visually-hidden">
+              {{- 'products.product.price.sale_price' | t -}}
+            </dt>
+            <dd class="price__current inline m-0 font-bold">
+              {%- render 'price-as-money', price: item.final_price, show_money_with_currency: false -%}
+            </dd>
+            <dt class="visually-hidden">
+              {{- 'products.product.price.regular_price' | t -}}
+            </dt>
+            <dd class="inline m-0">
+              {%- if variant_price_reduced -%}
+                <s class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %}">
+                  {%- render 'price-as-money', price: item.variant.compare_at_price, show_money_with_currency: false -%}
+                </s>
+              {%- else -%}
+                <s class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %}">
+                  {%- render 'price-as-money', price: item.original_price, show_money_with_currency: false -%}
+                </s>
+              {%- endif -%}
+            </dd>
+          </dl>
+        {%- else -%}
+          <strong class="price__current">
+            {%- render 'price-as-money', price: item.original_price, show_money_with_currency: false -%}
+          </strong>
+        {%- endif -%}
+      </span>
+      {%- if item.unit_price_measurement -%}
+        <div class="unit-price">
+          <span class="visually-hidden">{{ 'products.product.price.unit_price' | t }}</span>
+          <span class="unit-price__price">
+            {%- render 'price-as-money', price: item.unit_price, show_money_with_currency: false -%}
+          </span>
+          <span class="unit-price__separator">{{ 'products.product.price.unit_price_separator' | t }}</span>
+          <span class="unit-price__unit">
+            {%- if item.unit_price_measurement.reference_value != 1 -%}
+              {{- item.unit_price_measurement.reference_value -}}
+            {%- endif -%}
+            {{ item.unit_price_measurement.reference_unit }}
+          </span>
+        </div>
+      {%- endif -%}
+
+      {%- if item.product.template_suffix contains 'preorder' -%}
+        <div class="mt-2">
+          <span class="product-label product-label--preorder">
+            {% if settings.preorder_label_icon != 'none' %}
+              {% render 'icon', icon: settings.preorder_label_icon, width: 14, height: 14 %}
+            {% endif %}
+            {{- 'products.product.preorder' | t -}}
+          </span>
+        </div>
+      {%- endif -%}
+
+      {%- if item.product.has_only_default_variant == false
+        or item.properties.size != 0
+        or item.selling_plan_allocation != null
+      -%}
+        {%- if item.product.has_only_default_variant == false -%}
+          {%- for option in item.options_with_values -%}
+            <div>
+              <dt class="inline">
+                <strong>{{ option.name }}: </strong>
+              </dt>
+              <dd class="inline m-0">{{ option.value }}</dd>
+            </div>
+          {%- endfor -%}
+        {%- endif -%}
+
+        <div class="cart-item__variants text-sm">
+          <dl class="mt-2 mb-0">
+            {%- if item.properties.decoration_link and item.properties.Product_name -%}
+              <div>
+                {% unless item.properties.Product_name_displayed %}
+                  <dt class="inline">
+                    <strong>{{ item.properties.Product_name }}: </strong>
+                  </dt>
+                  <dd class="inline m-0">
+                    <a
+                      href="{{ item.properties['decoration_link'] }}"
+                      target="_blank"
+                      style="color: #282A9A;font-weight: bolder;"
+                      >Decoration Details</a
+                    >
+                  </dd>
+                  {% assign item.properties['Product_name_displayed'] = true %}
+                {% endunless %}
+              </div>
+              <div>
+                <dt class="inline">
+                  <strong>Decoration Charge: </strong>
+                </dt>
+                <dd class="inline m-0">${{ item.properties['Decoration Charge'] }}</dd>
+              </div>
+            {%- elsif item.properties.size > 0 -%}
+              {%- for property in item.properties -%}
+                <div>
+                  <dt class="inline">
+                    <strong>{{ property.first }}: </strong>
+                  </dt>
+                  <dd class="inline m-0">
+                    {% if property.first == 'decoration_link' %}
+                      <a href="{{ property.last }}" target="_blank" style="color: red;font-weight: bolder;"
+                        >Decoration Details</a
+                      >
+                    {% elsif property.first == 'Product_name' %}
+                      {{ property.last }}
+                    {% else %}
+                      {{ property.last }}
+                    {% endif %}
+                  </dd>
+                </div>
+              {%- endfor -%}
+            {%- endif -%}
+          </dl>
+        </div>
+        </dl>
+
+        {%- if item.selling_plan_allocation != null -%}
+          <p class="mt-2 mb-0">{{ item.selling_plan_allocation.selling_plan.name }}</p>
+        {%- endif -%}
+        </div>
+      {%- endif -%}
+
+      {%- if section.settings.show_backorder_text -%}
+        {% render 'backorder', product: item.product, variant: item.variant %}
+      {%- endif -%}
+
+      {%- if item.discounts.size > 0 -%}
+        <ul class="mt-3 mb-2 font-bold" role="list" aria-label="{{ 'customer.order.discount' | t }}">
+          {%- for discount in item.discounts -%}
+            <li class="mt-2">
+              <div class="discount text-sm inline-flex items-center">
+                {% render 'icon-tags' %}
+                {{- discount.title | escape_once -}}
+              </div>
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
+  </td>
+  <td class="cart-item__qty">
+    <div class="flex items-center mt-4">
+      {% comment %}Added/Modified by Limoni Apps on 05/03/24 to support Discount Ninja{% endcomment %}
+
+      <span
+        class="limoniapps-discountninja-cart-item-quantity"
+        data-limoniapps-discountninja-cart-key="{{item.key}}"
+      >
+        {% render 'quantity-input', is_cart: true, item: item, layout_style: 'combined' %}
+      </span>
+      <a
+        class="cart-item__remove btn btn--icon text-current tap-target js-remove-item"
+        href="{{ item.url_to_remove }}"
+        data-index="{{ item.index | plus: 1 }}"
+        aria-label="{{- 'cart.items.remove' | t -}}"
+        {% if settings.preload_links %}
+          data-no-instant
+        {% endif %}
+      >
+        {% render 'icon-trash' %}
+      </a>
+      <div class="cart-item__loader relative is-loading" hidden></div>
+    </div>
+    <div
+      class="alert mt-6 bg-error-bg text-error-text cart-item__error"
+      id="line-item-error-{{ item.index | plus: 1 }}"
+      role="alert"
+      hidden
+    ></div>
+  </td>
+  {% comment %}Added/Modified by Limoni Apps on 05/03/24 to support Discount Ninja{% endcomment %}
+
+  <td
+    class="cart-item__total price limoniapps-discountninja-cart-item-line-price limoniapps-table-cell"
+    data-limoniapps-discountninja-cart-key="{{item.key}}"
+  >
+    <div class="text-theme-light text-sm mb-2 md:hidden">
+      {{ 'cart.items.total' | t }}
+    </div>
+    {%- if variant_price_reduced or item.original_line_price != item.final_line_price -%}
+      <dl class="m-0 flex md:block">
+        <dt class="visually-hidden">
+          {{- 'products.product.price.sale_price' | t -}}
+        </dt>
+        <dd class="price__current m-0 font-bold">
+          {%- render 'price-as-money', price: item.final_line_price, show_money_with_currency: false -%}
+        </dd>
+        <dt class="visually-hidden">
+          {{- 'products.product.price.regular_price' | t -}}
+        </dt>
+        <dd class="m-0">
+          {%- if variant_price_reduced -%}
+            <s class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %}">
+              {%- liquid
+                assign compare_at_total_price = item.variant.compare_at_price | times: item.quantity
+                render 'price-as-money', price: compare_at_total_price, show_money_with_currency: false
+              -%}
+            </s>
+          {%- else -%}
+            <s class="price__was{% if settings.superscript_decimals %} price__was--supercents{% endif %}">
+              {%- render 'price-as-money', price: item.original_line_price, show_money_with_currency: false -%}
+            </s>
+          {%- endif -%}
+        </dd>
+      </dl>
+    {%- else -%}
+      <strong class="price__current">
+        {%- render 'price-as-money', price: item.original_line_price, show_money_with_currency: false -%}
+      </strong>
+    {%- endif -%}
+  </td>
+</tr>

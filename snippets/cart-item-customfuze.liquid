@@ -1,0 +1,189 @@
+{%- comment -%}
+  Parameters:
+  - designId {string} - CustomFuze design ID #
+{%- endcomment -%}
+
+{%- liquid
+  assign design           = "Unknown"
+  assign final_price      = 0
+  assign item             = nil
+  assign original_price   = 0
+  assign qtyTotal         = 0
+  assign series           = "Unknown"
+  assign sizes            = "" | split: "|"
+  assign turnaround_price = 0
+   
+  assign token = "CustomFuze Design #" | append: designId
+  assign token = cart.attributes[token]
+
+  assign turnaround = nil
+  if all_products["turnaround-time"]
+    for variant in all_products["turnaround-time"].variants
+      if variant.price == 0
+        assign turnaround = variant
+        break
+      endif
+    endfor
+  endif
+
+  for lineItem in cart.items
+    assign id = "" | append: lineItem.properties["Design ID #"]
+    if id != designId
+      continue
+    endif
+
+    if lineItem.product.handle == "turnaround-time"
+      assign turnaround = lineItem.variant
+      continue
+    endif
+
+    assign final_price    = final_price    | plus: lineItem.final_line_price
+    assign original_price = original_price | plus: lineItem.original_line_price
+
+    assign item     = lineItem
+    assign qtyTotal = qtyTotal | plus: lineItem.quantity
+
+    assign size = nil
+    for option in lineItem.options_with_values
+      if option.name == "Design"
+        assign design = option.value
+      elsif option.name == "Series"
+        assign series = option.value
+      elsif option.name == "Size"
+        assign size = option.value
+      endif
+    endfor
+
+    assign temp = lineItem.quantity | append: "×" | append: size
+    for s in sizes
+      assign args = s | split: "×"
+      if args[1] != size
+        assign temp = temp | append: "|" | append: s
+      endif
+    endfor
+    assign sizes = temp | split: "|" | sort
+    
+  endfor
+-%}
+
+<tr class="cart-item grid gap-x-6" id="cart-item-cf{{ designId }}" data-product-id="{{ item.product_id }}">
+  <td class="cart-item__image">
+    <input type="hidden" class="qty-input__input" value="0">
+    <a href="{{ item.url }}" class="block {% if settings.blend_product_images %} image-blend{% endif %}">
+      <img src="{{ settings.customfuze_server_url }}uploads/customitems/{{ designId }}-front.svg" width="128" height="128">
+    </a>
+  </td>
+  <td class="cart-item__details">
+    {%- if section.settings.show_vendor and item.vendor != blank -%}
+      <div class="text-theme-light text-sm mb-2">
+        {{ item.vendor }}
+      </div>
+    {%- endif -%}
+
+    <a class="cart-item__title m-0 font-bold text-current js-item-name" href="{{ item.url }}">
+      {{- item.product.title | escape -}}
+    </a>
+    
+{% comment %}Added/Modified by Limoni Apps on 05/03/24 to support Discount Ninja{% endcomment %}
+    <div class="limoniapps-discountninja-cart-item-product-comment" data-limoniapps-discountninja-cart-key="{{item.key}}"></div>
+    {%- if settings.cart_show_weight and item.variant.weight > 0 and false -%}
+      <div class="cart-item__weight text-sm mt-2">
+        {{ item.variant.weight | weight_with_unit: item.variant.weight_unit }}
+      </div>
+    {%- endif -%}
+
+    <div class="cart-item__info">
+{% comment %}Added/Modified by Limoni Apps on 05/03/24 to support Discount Ninja{% endcomment %}
+
+      {%- comment -%}
+      <span class="limoniapps-discountninja-cart-item-product-price" data-limoniapps-discountninja-cart-key="{{item.key}}">
+        <strong class="price__current">
+          {%- render 'price-as-money', price: price, show_money_with_currency: false -%}
+        </strong>
+      </span>
+      {%- endcomment -%}
+
+      <div class="cart-item__variants text-sm">
+        <dl class="mt-2 mb-0">
+          {%- comment -%}
+          <div>
+            <dt class="inline"><strong>Design: </strong></dt>
+            <dd class="inline m-0">{{ design }}</dd>
+          </div>
+          <div>
+            <dt class="inline"><strong>Fabric: </strong></dt>
+            <dd class="inline m-0">{{ series }}</dd>
+          </div>
+          {%- endcomment -%}
+          <div>
+            <dt class="inline"><strong>Design ID #: </strong></dt>
+            <dd class="inline m-0">
+              <a href="{{ settings.customfuze_server_url }}Home/Product?customItemId={{ designId }}&token={{ token }}" style="color: #000099; text-decoration: underline;" class="cf-edit-link">
+                {{ designId }}
+              </a>
+            </dd>
+          </div>
+          <div>
+            <dt class="inline"><strong>Sizes/Quantities: </strong></dt>
+            <dd class="inline m-0">{{ sizes | join: ", " }}</dd>
+          </div>
+          {%- if turnaround -%}
+            <div>
+              <dt class="inline"><strong>Turnaround: </strong></dt>
+              <dd class="inline m-0">
+                {{- turnaround.title -}}
+                {% if turnaround.metafields.custom.turnaround-number-of-days %}
+                  {%- assign turnaround_days = turnaround.metafields.custom.turnaround-number-of-days -%}
+                  ({{- turnaround_days }} day{%- if turnaround_days != 1 -%}s{%- endif -%})
+                {% endif %}
+                {% if turnaround.price != 0 %}
+                  {% assign turnaround_price = turnaround.price | times: qtyTotal %}
+                  {% comment %}&rarr; +{{ turnaround_price | money }}{% endcomment %}
+                {% endif %}
+              </dd>
+            </div>
+          {%- endif -%}
+        </dl>
+      </div>
+
+    </div>
+
+    {%- if is_drawer == true -%}
+      <div style="margin-top: 1em;">
+        {%- render "cart-item-customfuze-breakdown",
+          turnaround_price: turnaround_price,
+          original_price: original_price,
+          final_price: final_price,
+          qtyTotal:qtyTotal,
+          item: item,
+          turnaround: turnaround
+        -%}
+      </div>
+    {%- endif -%}
+    
+  </td>
+  <td class="cart-item__qty">
+    <div class="flex items-center mt-4">
+      {% comment %}Added/Modified by Limoni Apps on 05/03/24 to support Discount Ninja{% endcomment %}
+      <button type="button" class="cart-item__remove" aria-label="{{- 'cart.items.remove' | t -}}" onclick="cfRemoveDesign('{{ designId }}')">
+        {% render 'icon-trash' %}
+      </button>
+      <div class="cart-item__loader relative is-loading" hidden></div>
+    </div>
+    <div class="alert mt-6 bg-error-bg text-error-text cart-item__error" id="line-item-error-{{ item.index | plus: 1 }}" role="alert" hidden></div>
+
+  </td>
+  {% comment %}Added/Modified by Limoni Apps on 05/03/24 to support Discount Ninja{% endcomment %}
+  <td class="cart-item__total price limoniapps-discountninja-cart-item-line-price limoniapps-table-cell" data-limoniapps-discountninja-cart-key="{{item.key}}">
+    {%- if is_drawer != true -%}
+      {%- render "cart-item-customfuze-breakdown",
+        turnaround_price: turnaround_price,
+        original_price: original_price,
+        final_price: final_price,
+        qtyTotal:qtyTotal,
+        item: item,
+        turnaround: turnaround
+      -%}
+    {%- endif -%}
+  </td>
+</tr>

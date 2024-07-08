@@ -1,0 +1,99 @@
+<div id="addToCartMessage" style="font-size: 1.5em; font-weight: bold; text-align: center; margin: 2em 0">
+  CustomFuze items are being added to your cart...
+</div>
+<script>
+(async ()=>{
+
+  let cache;
+  let focusables = Array.from(document.body.querySelectorAll(
+      "*:is(a[href],area,button,details,input,textarea,select," +
+      "[tabindex='0']):not([disabled])"
+  )).filter(e=>{
+    for (; e instanceof Element; e = e.parentNode) {
+       let style =
+         (cache || (cache = new Map())).get(e) ||
+         cache.set(e, getComputedStyle(e)).get(e)
+       ;
+       if (style.display == "none" || style.visibility == "hidden")
+         return false;
+    }
+    return true;
+  });
+  //console.log("focusables", focusables);
+
+  //for (let element of focusables) {
+  //  element.setAttribute("disabled", "");
+  //  if (element.hasAttribute("href")) {
+  //    element.setAttribute("href-restore", element.getAttribute("href"));
+  //    element.setAttribute("href", "#");
+  //  }
+  //}
+
+  let params   = new URL(location.href).searchParams;
+  let designId = parseInt(params.get("design-id"));
+  let token    = String(params.get("token") ?? "").trim();
+  if (!Number.isInteger(designId) || token == "") {
+    location.href = "/";
+    return;
+  }
+
+  try {
+    let response = await (await fetch(
+      "{{ settings.customfuze_server_url }}API/CartContents?CustomItemId=" + designId + "&Token=" + token,
+      { method: "GET" }
+    )).json();
+    if (!response || !response.Success)
+      throw response;
+    //console.log("CartContents", response);
+
+    let cart = {{ cart | json }};
+    let items = cart.items.filter(i=>i.properties["Design ID #"] == String(designId));
+    if (items.length != 0) {
+      let updates = {};
+      for (let item of items)
+        updates[item.key] = 0;
+      let rusponse = await (await fetch("/cart/update.js", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates: updates })
+      })).json();
+      //console.log("update", rusponse);
+    }
+
+    let rusponse = await (await fetch("/cart/update.js", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ attributes: { ["CustomFuze Design #" + designId]: token } })
+    })).json();
+    //console.log("update", rusponse);
+
+    items = [];
+    for (let variantId of Object.keys(response.Items)) {
+      items.push({
+        id: variantId,
+        quantity: response.Items[variantId],
+        properties: {
+          "Design ID #" : designId,
+          //"Design token": token
+        }
+      })
+    }
+    response = await (await fetch("/cart/add.js", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: items })
+    })).json();
+    //console.log("add", response);
+
+    location.href = "/cart";
+  } catch (e) {
+    console.log(e);
+    //for (let element of focusables) {
+    //  element.removeAttribute("disabled");
+    //  if (element.hasAttribute("href-restore"))
+    //    element.setAttribute("href", element.getAttribute("href-restore"));
+    //}
+    alert("There was an error adding items to the cart.");
+  }
+})();
+</script>

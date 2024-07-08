@@ -1,0 +1,145 @@
+{%- comment -%}
+  Parameters:
+  - is_drawer {Boolean} - Is cart drawer.
+
+  Usage:
+  {% render 'cart-items', is_drawer: true %}
+{%- endcomment -%}
+
+{%- if cart != empty -%}
+  <script src="{{ 'cart-items.js' | asset_url }}" defer="defer"></script>
+{%- endif -%}
+
+<script>
+window.addEventListener("load", ()=>setInterval(()=>{
+  for (let a of document.querySelectorAll(".cf-edit-link")) {
+    if (a.hasAttribute("target"))
+      a.removeAttribute("target");
+    if (!a.cfEditHook) {
+      a.cfEditHook = true;
+      a.addEventListener("click", e=>e.stopPropagation());
+    }
+  }
+}, 100));
+
+async function cfRemoveDesign(designId) {
+
+  if (!confirm(
+    "OK to remove CustomFuze design #" + designId + " from the cart?\n" +
+    "All items for this design will be removed."
+  )) return;
+
+  let items = {{ cart.items | json }}.filter(i=>i.properties["Design ID #"] == String(designId));
+  if (items.length == 0)
+    return;
+  let updates = {};
+  for (let item of items)
+    updates[item.key] = 0;
+  let response = await (await fetch("/cart/update.js", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ updates: updates, attributes: { ["CustomFuze Design #" + designId]: null } })
+  })).json();
+  location.reload();
+}
+</script>
+
+<style>
+  {%- unless is_drawer == true -%}
+    .cf-cart-price-block { justify-content: end; }
+    @media (max-width: 767px) {
+      .cf-cart-price-block { justify-content: start; }
+      .cf-cart-price-block .dt { display: none }
+    }
+    @media (min-width: 768px) {
+      .cf-cart-price-block .mb { display: none }
+    }
+  {%- else -%}
+    .cf-cart-price-block { justify-content: start; }
+    .cf-cart-price-block .dt { display: none }
+  {%- endunless -%}
+</style>
+
+{%- liquid
+  if is_drawer
+    assign section_id = 'cart-drawer'
+  else
+    assign section_id = section.id
+  endif
+
+  assign cfDesignIds = "" | split: "|"
+  for item in cart.items
+    assign designId = "" | append: item.properties["Design ID #"]
+    if designId == "" or cfDesignIds contains designId
+      continue
+    endif
+    if cfDesignIds.size > 0
+      assign cfDesignIds = cfDesignIds | join: "|" | append: "|"
+    else
+      assign cfDesignIds = ""
+    endif
+    assign cfDesignIds = cfDesignIds | append: designId | split: "|"
+  endfor
+  assign cfDesignIds = cfDesignIds | sort
+-%}
+
+<cart-items
+  id="cart-items"
+  data-section="{{ section_id }}"
+  data-empty="{% if cart == empty %}true{% else %}false{% endif %}"
+>
+  {%- if cart == empty -%}
+    <div class="cart-empty flex flex-col justify-center items-center h-full js-cart-empty">
+      {%- if settings.cart_icon == 'bag' -%}
+        {%- render 'icon-bag' -%}
+      {%- elsif settings.cart_icon == 'basket' -%}
+        {%- render 'icon-basket' -%}
+      {%- else -%}
+        {%- render 'icon-cart' -%}
+      {%- endif -%}
+
+      <p>{{ 'cart.general.empty' | t }}</p>
+
+      {%- if settings.cart_empty_shop_link -%}
+        <a class="btn btn--primary" href="{{ settings.cart_empty_shop_link }}">
+          {{- 'cart.general.start_shopping' | t -}}
+        </a>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
+  {%- if cart != empty -%}
+    <table class="cart-items w-full">
+      <thead class="visually-hidden">
+        <tr>
+          <th colspan="2">{{ 'cart.items.product' | t }}</th>
+          <th>{{ 'cart.items.price' | t }}</th>
+          <th>{{ 'cart.items.quantity' | t }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {%- comment -%} The previous contents of this table were moved into snippets/cart-item-normal.liquid {%- endcomment -%}
+        {%- for designId in cfDesignIds -%}
+          {%- render "cart-item-customfuze", designId: designId, is_drawer: is_drawer %}
+        {%- endfor -%}
+        {%- for item in cart.items -%}
+          {%- if item.properties["Design ID #"] == nil -%}
+            {%- render "cart-item-normal", item: item -%}
+          {%- endif -%}
+        {%- endfor -%}
+      </tbody>
+    </table>
+  {%- endif -%}
+
+  <p class="visually-hidden" id="cart-live-region-text" role="status" aria-live="polite">
+    {{ 'cart.summary.subtotal' | t }}:
+    {%- render 'price-as-money', price: cart.total_price, show_money_with_currency: true -%}
+  </p>
+  <p class="visually-hidden" id="cart-line-item-status" role="status" aria-live="polite" aria-hidden="true">
+    {{- 'accessibility.loading' | t -}}
+  </p>
+
+  {%- if is_drawer -%}
+    <div class="alert mt-6 bg-error-bg text-error-text" id="cart-errors" role="alert" hidden></div>
+  {%- endif -%}
+</cart-items>
