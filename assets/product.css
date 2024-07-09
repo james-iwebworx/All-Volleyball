@@ -91,9 +91,16 @@ button#decorate {
   outline-offset: 3px;
 }
 
-.opt-btn:checked + .opt-label--btn {
+/*.opt-btn:checked + .opt-label--btn {
   background-color: rgba(var(--bg-color));
   color: rgb(var(--text-color));
+}
+*/
+
+/*pdp-option-selection*/
+.opt-btn:checked + .opt-label--btn {
+  background-color: #000000;
+  color: #ffffff;
 }
 
 .opt-btn:checked + .opt-label:not(.opt-label--swatch)::after,
