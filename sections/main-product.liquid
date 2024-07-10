@@ -386,7 +386,7 @@
                     
                     {% comment %}<input type="hidden" name="id" value="{{ current_variant.id }}" disabled>{% endcomment %}
 
-                     <input type="hidden" name="id" value="{{ current_variant.id }}">
+                     <input type="hidden" name="id" value="{{ current_variant.id }}" enabled>
                     <div class="product-info__add-to-cart flex flex-col {% if enable_dynamic_checkout %} qty-input--secondary-btn{% endif %}">
                       <div class="product-info__add-to-cart-wrapper flex w-full">
                         {%- liquid
