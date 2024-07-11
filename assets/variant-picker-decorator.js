@@ -152,7 +152,7 @@ if (!customElements.get('variant-picker')) {
     /**
      * Updates the "Add to Cart" button label and disabled state.
      */
-    /*updateAddToCartButton() {
+    updateAddToCartButton() {
       this.productForm = this.section.querySelector('.js-product-form-main');
       if (!this.productForm) return;
 
@@ -165,7 +165,7 @@ if (!customElements.get('variant-picker')) {
         ? this.addBtn.dataset.addToCartText
         : unavailableStr;
     }
-*/
+
     /**
      * Updates the availability status in option selectors.
      */
