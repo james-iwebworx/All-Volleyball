@@ -269,10 +269,6 @@
               {%- endfor -%}
             </div>
           </fieldset>
-
-<div>
-<p>NOTE: PLEASE COMPLETE STEPS 1-3</p>
-</div>
         
           {% if stepNumber == 1 %}
             {% assign stepNumber = stepNumber | plus: 1 %}
@@ -343,6 +339,10 @@
     }
   </script>
 
+<div>
+<p>NOTE: PLEASE COMPLETE STEPS 1-3</p>
+</div>
+  
   <div class="min-fee-message-container" data-default-min-fee-message="{{ default_min_fee_message }}"></div>
 
   <div class="buttons-wrapper">
