@@ -41,7 +41,8 @@
 button#decorate {
   overflow: hidden;
   border-radius: var(--btn-border-radius, 0);
-  background: #88323b;
+  /*background: #88323b;*/
+  background: #2B83C8;
   width: 100%;
   height: 42px;
   font-size: 14px;
