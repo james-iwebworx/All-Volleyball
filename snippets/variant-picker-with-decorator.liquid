@@ -193,10 +193,6 @@
           assign sizeOption = true
         endif
       %}
-
-<div>
-<p>NOTE: PLEASE COMPLETE STEPS 1-3</p>
-</div>
     
       {% if sizeOption %}
           <fieldset class="decorator-option-selector sizes-option">
@@ -274,6 +270,10 @@
             </div>
           </fieldset>
 
+<div>
+<p>NOTE: PLEASE COMPLETE STEPS 1-3</p>
+</div>
+        
           {% if stepNumber == 1 %}
             {% assign stepNumber = stepNumber | plus: 1 %}
             <fieldset class="decorator-option-selector product-configuration" data-selector-type="listed">
