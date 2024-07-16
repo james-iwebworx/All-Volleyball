@@ -52,6 +52,7 @@
 
   <link rel="preload" href="{{ 'main.css' | asset_url }}" as="style">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="{{ 'custom.js' | asset_url }}"></script>
 
   {%- style %}
     {{- settings.body_font | font_face: font_display: 'swap' -}}
@@ -280,6 +281,7 @@
   {% endstyle -%}
 
   <link rel="stylesheet" href="{{ 'main.css' | asset_url }}">
+  <link rel="stylesheet" href="{{ 'custom.css' | asset_url }}">
   <script src="{{ 'main.js' | asset_url }}" defer="defer"></script>
 
   {%- unless settings.body_font.system? -%}

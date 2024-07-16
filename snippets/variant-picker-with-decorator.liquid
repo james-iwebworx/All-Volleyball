@@ -347,14 +347,28 @@
 </div>
   
   <div class="buttons-wrapper">
-    <button class="decorate-button btn btn--primary w-full hide" id="decorate">
-      Decorate
-    </button>
+    <div class="decorate-button-wrapper">
+      <a href="/" class="mobile-warning-popup-btn"></a>
+      <button class="decorate-button btn btn--primary w-full hide" id="decorate">
+        Decorate
+      </button>
+    </div>
     <button class="btn btn--primary w-full btn-add-to-cart ">
       {{- 'products.product.add_to_cart' | t -}}
     </button>
+    <a href="/" target="_self" class="btn-add-to-cart-error"></a>
   </div>
 </variant-picker>
+
+<div class="mobile-warning">
+  <div class="mw-content">
+    <p>For the best experience, we advise using a Desktop during your decoration process.</p>
+    <div class="mw-action-btn">
+      <a href="/" class="mw-decorate-trigger btn btn--primary">Continue</a>
+      <a href="/" class="mw-close btn btn--ghost">Cancel</a>
+    </div>
+  </div>
+</div>
 
 <div class="shipping-message-container"
      data-default-dropshipping-message="{{ default_dropshipping_message }}"

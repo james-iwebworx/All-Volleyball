@@ -240,9 +240,9 @@ if (!customElements.get('variant-picker')) {
             const qtyInput = selector.querySelector("input");
             qtyInput.setAttribute('max', variantQ)
             qtyInput.setAttribute('data-variant-id', variantId);
-            qtyInput.value = 0;
-            qtyInput.parentElement.querySelector('.btn--minus').click();
             if (variantQ <= 0) {
+              qtyInput.value = 0;
+              qtyInput.parentElement.querySelector('.btn--minus').click();
               selector.classList.add('out-of-stock');
             } else {
               selector.classList.remove('out-of-stock');

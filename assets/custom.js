@@ -405,3 +405,38 @@
  *
  * Have fun! - The Clean Canvas Development Team.
  */
+
+$(document).on('click', '.btn-add-to-cart-error', function(){
+	$('.incomplete-warning-message').show();
+	setTimeout(function(){
+		$('.incomplete-warning-message').fadeOut();
+	}, 5000);
+	return false;
+});
+
+$(document).on('change', '.qty-input__input', function(){
+	var $this = $(this),
+	$val = $this.val(),
+	$target = $this.closest('.qty-input').find('.btn--minus');
+	if($val <= 0) {
+		$target.removeClass('enable-minus');
+	} else {
+		$target.addClass('enable-minus');
+	}
+});
+
+$(document).on('click', '.mw-close', function(){
+	$(this).closest('.mobile-warning').hide();
+	return false;
+});
+
+$(document).on('click', '.mw-decorate-trigger', function(){
+	$('#decorate').trigger('click');
+	$(this).closest('.mobile-warning').hide();
+	return false;
+});
+
+$(document).on('click', '.mobile-warning-popup-btn', function(){
+	$('.mobile-warning').show();
+	return false;
+});
