@@ -43,6 +43,10 @@
 	display:none;
 }
 
+.decorate-button-wrapper {
+	position:relative;
+}
+
 @media only screen and (max-width:600px) {
 	.mobile-warning {
 		position:fixed;

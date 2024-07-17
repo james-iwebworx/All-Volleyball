@@ -437,6 +437,13 @@ $(document).on('click', '.mw-decorate-trigger', function(){
 });
 
 $(document).on('click', '.mobile-warning-popup-btn', function(){
-	$('.mobile-warning').show();
+	if($('#decorate').attr('disabled') == true || $('#decorate').attr('disabled') == 'disabled') {
+		$('.incomplete-warning-message').show();
+		setTimeout(function(){
+			$('.incomplete-warning-message').fadeOut();
+		}, 5000);
+	} else {
+		$('.mobile-warning').show();
+	}
 	return false;
 });
